@@ -34,6 +34,9 @@
 		<Reference Include="UnityEngine.UI">
 			<HintPath>..\Il2CppAssemblies\UnityEngine.UI.dll</HintPath>
 		</Reference>
+		<Reference Include="Il2CppSystem.Core">
+			<HintPath>..\Il2CppAssemblies\Il2CppSystem.Core.dll</HintPath>
+		</Reference>
 		<Reference Include="UnityEngine.ImageConversionModule">
 			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Schedule I - Copy\MelonLoader\Il2CppAssemblies\UnityEngine.ImageConversionModule.dll</HintPath>
 		</Reference>
