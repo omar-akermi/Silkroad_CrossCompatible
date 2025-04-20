@@ -63,6 +63,9 @@
 		<Reference Include="UnityEngine">
 			<HintPath>..\MonoAssemblies\UnityEngine.dll</HintPath>
 		</Reference>
+		<Reference Include="UnityEngine.UIModule">
+			<HintPath>..\MonoAssemblies\UnityEngine.UIModule.dll</HintPath>
+		</Reference>
 		<Reference Include="UnityEngine.ImageConversionModule">
 			<HintPath>..\MonoAssemblies\UnityEngine.ImageConversionModule.dll</HintPath>
 		</Reference>

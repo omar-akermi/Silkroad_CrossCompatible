@@ -33,9 +33,13 @@ namespace SOE
         private Text questReward;
         private Text deliveryStatus;
         private Button acceptButton;
+        private GameObject containerRoot;
+        private bool hasRefreshedOnOpen = false;
 
         protected override void BuildUI(GameObject container)
         {
+            containerRoot = container; // ✅ store reference
+
             Transform root = container.transform;
             MelonLogger.Msg("\ud83d\udcf1 Building Silk Road UI...");
 
@@ -100,9 +104,19 @@ namespace SOE
 
             GameObject acceptGO = UIFactory.Button("AcceptButton", "Accept Delivery", rightPanel.transform, new Color(0.2f, 0.6f, 0.2f));
             acceptButton = acceptGO.GetComponent<Button>();
+            QuestDelivery.OnQuestCompleted += OnDeliveryQuestFinished;
 
             MelonLogger.Msg("\u2705 Silk Road UI finished.");
             LoadQuests();
+        }
+        private void OnDeliveryQuestFinished()
+        {
+            MelonLogger.Msg("[Silk Road App] 🔁 Quest marked as completed. Refreshing quest list.");
+            RefreshQuestList();
+        }
+        private void OnDestroy()
+        {
+            QuestDelivery.OnQuestCompleted -= OnDeliveryQuestFinished;
         }
 
         public void LoadQuests()
@@ -172,152 +186,152 @@ namespace SOE
             RefreshQuestList();
         }
 
-        private void RefreshQuestList()
+private void RefreshQuestList()
+{
+    MelonLogger.Msg("🔁 Refreshing quest list...");
+
+    foreach (Transform child in questListContainer)
+        GameObject.Destroy(child.gameObject);
+
+    for (int i = 0; i < quests.Count; i++)
+    {
+        var quest = quests[i];
+
+        MelonLogger.Msg($"🆕 Creating icon for quest: {quest.Title}");
+
+        // Find product definition
+        ProductDefinition product = null;
+        var allProducts = ProductManager.Instance.AllProducts;
+        for (int j = 0; j < allProducts.Count; j++)
         {
-            MelonLogger.Msg("🔁 Refreshing quest list...");
-
-            foreach (Transform child in questListContainer)
-                GameObject.Destroy(child.gameObject);
-
-            for (int i = 0; i < quests.Count; i++)
+            var def = allProducts[j];
+            if (def != null && def.name == quest.ProductID)
             {
-                var quest = quests[i];
-
-                MelonLogger.Msg($"🆕 Creating icon for quest: {quest.Title}");
-
-                // Find product definition
-                ProductDefinition product = null;
-                var allProducts = ProductManager.Instance.AllProducts;
-                for (int j = 0; j < allProducts.Count; j++)
-                {
-                    var def = allProducts[j];
-                    if (def != null && def.name == quest.ProductID)
-                    {
-                        product = def;
-                        break;
-                    }
-                }
-
-                if (product == null)
-                {
-                    MelonLogger.Warning($"❌ Product not found: {quest.ProductID}");
-                    continue;
-                }
-
-                Sprite iconSprite = product.Icon;
-                if (iconSprite == null)
-                {
-                    MelonLogger.Warning($"⚠️ No icon for {product.name}");
-                    continue;
-                }
-
-                // Generate key for completion tracking
-                string questKey = $"{quest.ProductID}_{quest.AmountRequired}";
-                bool isCompleted = QuestDelivery.CompletedQuestKeys.Contains(questKey);
-
-                // Row container
-                GameObject row = new GameObject("QuestRow_" + quest.Title);
-                row.AddComponent<RectTransform>();
-                Image rowBg = row.AddComponent<Image>();
-                rowBg.color = new Color(0.15f, 0.15f, 0.15f);
-                rowBg.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
-                rowBg.type = Image.Type.Sliced;
-                row.transform.SetParent(questListContainer, false);
-
-                HorizontalLayoutGroup hLayout = row.AddComponent<HorizontalLayoutGroup>();
-                hLayout.spacing = 10;
-                hLayout.padding = new RectOffset(50, 10, 5, 5);
-                hLayout.childAlignment = TextAnchor.MiddleLeft;
-                hLayout.childForceExpandHeight = false;
-                hLayout.childForceExpandWidth = false;
-
-                LayoutElement rowLE = row.AddComponent<LayoutElement>();
-                rowLE.preferredHeight = 90f;
-                rowLE.minHeight = 90f;
-
-                // --- ICON PANEL ---
-                GameObject iconGO = new GameObject("QuestIcon_" + quest.Title);
-                iconGO.transform.SetParent(row.transform, false);
-                RectTransform rt = iconGO.AddComponent<RectTransform>();
-                rt.sizeDelta = new Vector2(90f, 90f);
-
-                Image bg = iconGO.AddComponent<Image>();
-                bg.color = new Color(0.15f, 0.15f, 0.15f);
-                bg.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
-                bg.type = Image.Type.Sliced;
-
-                LayoutElement le = iconGO.AddComponent<LayoutElement>();
-                le.preferredHeight = 90f;
-                le.minHeight = 90f;
-                le.preferredWidth = 90f;
-
-                GameObject icon = new GameObject("Icon");
-                icon.AddComponent<RectTransform>();
-                icon.AddComponent<Image>(); icon.transform.SetParent(iconGO.transform, false);
-                RectTransform iconRT = icon.GetComponent<RectTransform>();
-                iconRT.anchorMin = new Vector2(0.15f, 0.15f);
-                iconRT.anchorMax = new Vector2(0.85f, 0.85f);
-                iconRT.offsetMin = Vector2.zero;
-                iconRT.offsetMax = Vector2.zero;
-
-                Image iconImage = icon.GetComponent<Image>();
-                iconImage.sprite = iconSprite;
-                iconImage.preserveAspect = true;
-                iconImage.color = Color.white;
-
-                Outline outline = icon.AddComponent<Outline>();
-                outline.effectColor = new Color(1f, 1f, 1f, 0.15f);
-                outline.effectDistance = new Vector2(1.5f, -1.5f);
-
-                // IL2CPP-safe button click
-                Button btn = iconGO.AddComponent<Button>();
-                btn.targetGraphic = bg;
-
-                QuestData clickedQuest = quest;
-                void Select() => OnSelectQuest(clickedQuest);
-                btn.onClick.AddListener((UnityEngine.Events.UnityAction)Select);
-
-                // 🔒 Disable if already completed or another quest is active
-                btn.interactable = !isCompleted && !QuestDelivery.QuestActive;
-
-                // --- TEXT PANEL ---
-                GameObject textPanel = new GameObject("QuestText");
-                textPanel.AddComponent<RectTransform>();
-                textPanel.transform.SetParent(row.transform, false);
-
-                RectTransform textRT = textPanel.GetComponent<RectTransform>();
-                textRT.sizeDelta = new Vector2(280f, 90f);
-
-                VerticalLayoutGroup vLayout = textPanel.AddComponent<VerticalLayoutGroup>();
-                vLayout.spacing = 4;
-                vLayout.childAlignment = TextAnchor.MiddleLeft;
-                vLayout.childControlHeight = true;
-                vLayout.childControlWidth = true;
-                vLayout.childForceExpandWidth = false;
-
-                LayoutElement textLE = textPanel.AddComponent<LayoutElement>();
-                textLE.minWidth = 200f;
-                textLE.flexibleWidth = 1;
-
-                // Title
-                UIFactory.Text("QuestTitle", quest.Title, textPanel.transform, 16, TextAnchor.MiddleLeft, FontStyle.Bold);
-
-                // Mafia label
-                string mafiaLabel = "Client: Unknown";
-                if (product is WeedDefinition) mafiaLabel = "Client: German Mafia";
-                else if (product is CocaineDefinition) mafiaLabel = "Client: Canadian Mafia";
-                else if (product is MethDefinition) mafiaLabel = "Client: Russian Mafia";
-
-                UIFactory.Text("QuestClient", mafiaLabel, textPanel.transform, 14, TextAnchor.UpperLeft);
-
-                if (isCompleted)
-                {
-                    UIFactory.Text("CompletedLabel", "<color=#888888><i>Already Delivered</i></color>", textPanel.transform, 12, TextAnchor.UpperLeft);
-                }
+                product = def;
+                break;
             }
-
-            MelonLogger.Msg($"✅ Displayed {quests.Count} quests using in-game product icons.");
         }
+
+        if (product == null)
+        {
+            MelonLogger.Warning($"❌ Product not found: {quest.ProductID}");
+            continue;
+        }
+
+        Sprite iconSprite = product.Icon;
+        if (iconSprite == null)
+        {
+            MelonLogger.Warning($"⚠️ No icon for {product.name}");
+            continue;
+        }
+
+        // Generate key for completion tracking
+        string questKey = $"{quest.ProductID}_{quest.AmountRequired}";
+        bool isCompleted = QuestDelivery.CompletedQuestKeys.Contains(questKey);
+
+        // Row container
+        GameObject row = new GameObject("QuestRow_" + quest.Title);
+        row.AddComponent<RectTransform>();
+        Image rowBg = row.AddComponent<Image>();
+        rowBg.color = new Color(0.15f, 0.15f, 0.15f);
+        rowBg.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
+        rowBg.type = Image.Type.Sliced;
+        row.transform.SetParent(questListContainer, false);
+
+        HorizontalLayoutGroup hLayout = row.AddComponent<HorizontalLayoutGroup>();
+        hLayout.spacing = 10;
+        hLayout.padding = new RectOffset(50, 10, 5, 5);
+        hLayout.childAlignment = TextAnchor.MiddleLeft;
+        hLayout.childForceExpandHeight = false;
+        hLayout.childForceExpandWidth = false;
+
+        LayoutElement rowLE = row.AddComponent<LayoutElement>();
+        rowLE.preferredHeight = 90f;
+        rowLE.minHeight = 90f;
+
+        // --- ICON PANEL ---
+        GameObject iconGO = new GameObject("QuestIcon_" + quest.Title);
+        iconGO.transform.SetParent(row.transform, false);
+        RectTransform rt = iconGO.AddComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(90f, 90f);
+
+        Image bg = iconGO.AddComponent<Image>();
+        bg.color = new Color(0.15f, 0.15f, 0.15f);
+        bg.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
+        bg.type = Image.Type.Sliced;
+
+        LayoutElement le = iconGO.AddComponent<LayoutElement>();
+        le.preferredHeight = 90f;
+        le.minHeight = 90f;
+        le.preferredWidth = 90f;
+
+        GameObject icon = new GameObject("Icon");
+        icon.AddComponent<RectTransform>();
+        icon.AddComponent<Image>(); icon.transform.SetParent(iconGO.transform, false);
+        RectTransform iconRT = icon.GetComponent<RectTransform>();
+        iconRT.anchorMin = new Vector2(0.15f, 0.15f);
+        iconRT.anchorMax = new Vector2(0.85f, 0.85f);
+        iconRT.offsetMin = Vector2.zero;
+        iconRT.offsetMax = Vector2.zero;
+
+        Image iconImage = icon.GetComponent<Image>();
+        iconImage.sprite = iconSprite;
+        iconImage.preserveAspect = true;
+        iconImage.color = Color.white;
+
+        Outline outline = icon.AddComponent<Outline>();
+        outline.effectColor = new Color(1f, 1f, 1f, 0.15f);
+        outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+        // IL2CPP-safe button click
+        Button btn = iconGO.AddComponent<Button>();
+        btn.targetGraphic = bg;
+
+        QuestData clickedQuest = quest;
+        void Select() => OnSelectQuest(clickedQuest);
+        btn.onClick.AddListener((UnityEngine.Events.UnityAction)Select);
+
+        // 🔒 Disable if already completed or another quest is active
+        btn.interactable = !isCompleted && !QuestDelivery.QuestActive;
+
+        // --- TEXT PANEL ---
+        GameObject textPanel = new GameObject("QuestText");
+        textPanel.AddComponent<RectTransform>();
+        textPanel.transform.SetParent(row.transform, false);
+
+        RectTransform textRT = textPanel.GetComponent<RectTransform>();
+        textRT.sizeDelta = new Vector2(280f, 90f);
+
+        VerticalLayoutGroup vLayout = textPanel.AddComponent<VerticalLayoutGroup>();
+        vLayout.spacing = 4;
+        vLayout.childAlignment = TextAnchor.MiddleLeft;
+        vLayout.childControlHeight = true;
+        vLayout.childControlWidth = true;
+        vLayout.childForceExpandWidth = false;
+
+        LayoutElement textLE = textPanel.AddComponent<LayoutElement>();
+        textLE.minWidth = 200f;
+        textLE.flexibleWidth = 1;
+
+        // Title
+        UIFactory.Text("QuestTitle", quest.Title, textPanel.transform, 16, TextAnchor.MiddleLeft, FontStyle.Bold);
+
+        // Mafia label
+        string mafiaLabel = "Client: Unknown";
+        if (product is WeedDefinition) mafiaLabel = "Client: German Mafia";
+        else if (product is CocaineDefinition) mafiaLabel = "Client: Canadian Mafia";
+        else if (product is MethDefinition) mafiaLabel = "Client: Russian Mafia";
+
+        UIFactory.Text("QuestClient", mafiaLabel, textPanel.transform, 14, TextAnchor.UpperLeft);
+
+        if (isCompleted)
+        {
+            UIFactory.Text("CompletedLabel", "<color=#888888><i>Already Delivered</i></color>", textPanel.transform, 12, TextAnchor.UpperLeft);
+        }
+    }
+
+    MelonLogger.Msg($"✅ Displayed {quests.Count} quests using in-game product icons.");
+}
 
         private void OnSelectQuest(QuestData quest)
         {
@@ -372,6 +386,21 @@ namespace SOE
             deliveryStatus.text = "📦 Delivery started!";
             acceptButton.interactable = false;
         }
+        private void Update()
+        {
+            if (containerRoot != null && containerRoot.activeInHierarchy && !hasRefreshedOnOpen)
+            {
+                if (quests == null || quests.Count == 0)
+                    LoadQuests();
+
+                RefreshQuestList();
+                hasRefreshedOnOpen = true;
+            }
+
+            if (containerRoot != null && !containerRoot.activeInHierarchy)
+                hasRefreshedOnOpen = false;
+        }
+
 
     }
 }

@@ -27,6 +27,7 @@ namespace SilkRoad.Quests
         private QuestEntry deliveryEntry;
         private QuestEntry rewardEntry;
         public static bool QuestActive = false;
+        public static event Action OnQuestCompleted;
 
         internal override void CreateInternal()
         {
@@ -171,15 +172,15 @@ namespace SilkRoad.Quests
                 MelonLogger.Warning("📦 Not enough room in reward stash for cash.");
                 return;
             }
-
-            rewardDrop.Storage.AddItem(cash);
-            rewardEntry.Complete();
-            Complete();
-            QuestManager.Quests.Remove(this);
             QuestActive = false;
-
             string key = $"{Data.ProductID}_{Data.RequiredAmount}";
             CompletedQuestKeys.Add(key);
+            rewardDrop.Storage.AddItem(cash);
+            rewardEntry.Complete();
+            deliveryEntry.Complete();
+            Complete();
+            QuestManager.Quests.Remove(this);
+            OnQuestCompleted?.Invoke();
 
             Contacts.Buyer?.SendRewardDropped();
 
