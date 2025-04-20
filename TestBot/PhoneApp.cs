@@ -15,6 +15,7 @@ using System.Collections.Generic;
 
 using MelonLoader;
 using System.Collections.Generic;
+using SilkRoad.Quests;
 
 namespace SOE
 {
@@ -171,7 +172,6 @@ namespace SOE
             RefreshQuestList();
         }
 
-
         private void RefreshQuestList()
         {
             MelonLogger.Msg("🔁 Refreshing quest list...");
@@ -211,6 +211,10 @@ namespace SOE
                     continue;
                 }
 
+                // Generate key for completion tracking
+                string questKey = $"{quest.ProductID}_{quest.AmountRequired}";
+                bool isCompleted = QuestDelivery.CompletedQuestKeys.Contains(questKey);
+
                 // Row container
                 GameObject row = new GameObject("QuestRow_" + quest.Title);
                 row.AddComponent<RectTransform>();
@@ -219,7 +223,6 @@ namespace SOE
                 rowBg.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
                 rowBg.type = Image.Type.Sliced;
                 row.transform.SetParent(questListContainer, false);
-
 
                 HorizontalLayoutGroup hLayout = row.AddComponent<HorizontalLayoutGroup>();
                 hLayout.spacing = 10;
@@ -270,9 +273,12 @@ namespace SOE
                 Button btn = iconGO.AddComponent<Button>();
                 btn.targetGraphic = bg;
 
-                QuestData clickedQuest = quest; // capture loop variable properly
+                QuestData clickedQuest = quest;
                 void Select() => OnSelectQuest(clickedQuest);
                 btn.onClick.AddListener((UnityEngine.Events.UnityAction)Select);
+
+                // 🔒 Disable if already completed or another quest is active
+                btn.interactable = !isCompleted && !QuestDelivery.QuestActive;
 
                 // --- TEXT PANEL ---
                 GameObject textPanel = new GameObject("QuestText");
@@ -303,6 +309,11 @@ namespace SOE
                 else if (product is MethDefinition) mafiaLabel = "Client: Russian Mafia";
 
                 UIFactory.Text("QuestClient", mafiaLabel, textPanel.transform, 14, TextAnchor.UpperLeft);
+
+                if (isCompleted)
+                {
+                    UIFactory.Text("CompletedLabel", "<color=#888888><i>Already Delivered</i></color>", textPanel.transform, 12, TextAnchor.UpperLeft);
+                }
             }
 
             MelonLogger.Msg($"✅ Displayed {quests.Count} quests using in-game product icons.");
@@ -322,12 +333,45 @@ namespace SOE
             void OnClick() => AcceptQuest(quest);
             acceptButton.onClick.AddListener((UnityAction)OnClick);
         }
-
         private void AcceptQuest(QuestData quest)
         {
-            MelonLogger.Msg($"\ud83d\ude80 Accepting quest: {quest.Title}");
-            deliveryStatus.text = "\ud83d\ude9a Delivery Active";
+            string questKey = $"{quest.ProductID}_{quest.AmountRequired}";
+
+            if (QuestDelivery.QuestActive)
+            {
+                MelonLogger.Warning("⚠️ You already have a delivery quest in progress!");
+                deliveryStatus.text = "⚠️ Finish your current job first!";
+                return;
+            }
+
+            if (QuestDelivery.CompletedQuestKeys.Contains(questKey))
+            {
+                MelonLogger.Warning("⛔ You've already delivered this exact request.");
+                deliveryStatus.text = "⛔ Already delivered this shipment.";
+                acceptButton.interactable = false;
+                return;
+            }
+
+            MelonLogger.Msg("🚚 Accepting quest...");
+
+            var q = S1API.Quests.QuestManager.CreateQuest<QuestDelivery>();
+            if (q is QuestDelivery delivery)
+            {
+                delivery.Data.ProductID = quest.ProductID;
+                delivery.Data.RequiredAmount = quest.AmountRequired;
+                delivery.Data.Reward = quest.Reward;
+
+                delivery.Begin();
+                MelonLogger.Msg("✅ Quest created and initialized.");
+            }
+            else
+            {
+                MelonLogger.Error("❌ Failed to cast quest to QuestDelivery.");
+            }
+
+            deliveryStatus.text = "📦 Delivery started!";
             acceptButton.interactable = false;
         }
+
     }
 }

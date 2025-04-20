@@ -18,7 +18,7 @@ using UnityEngine;
 using MelonLoader;
 
 namespace ScheduleOneEnhanced.Mods
-{
+{/*
     [HarmonyPatch]
     public class ReassignEmployees
     {
@@ -148,5 +148,5 @@ namespace ScheduleOneEnhanced.Mods
 
             MelonLogger.Msg($"[ReassignEmployees] {employee.name} reassigned to {property.PropertyName}");
         }
-    }
+    }*/
 }

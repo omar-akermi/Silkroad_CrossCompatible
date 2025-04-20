@@ -15,7 +15,7 @@ using MelonLoader;
 using Object = UnityEngine.Object;
 using MelonLoader.Utils;
 
-namespace Silkroad
+namespace SOE
 {
     public abstract class PhoneApp
     {
