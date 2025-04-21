@@ -10,11 +10,11 @@ namespace SilkRoad.Quests
 
 
         private static readonly string[] DeliveryAcceptedTexts = {
-    "We’ve heard of your product. {amount} of {product}. Impress us.",
-    "Your name reached our ears. {amount} units of {product}. Discreet drop. No attention.",
+    "We’ve heard of your product. {amount} bricks of {product}. Impress us.",
+    "Your name reached our ears. {amount} bricks of {product}. Discreet drop. No attention.",
     "Quality like yours doesn't go unnoticed. Deliver {amount} bricks of {product}. Same location.",
-    "We're watching, and we’re interested. {amount} {product}. Clean work only.",
-    "Consider this a test. {amount} packages of {product}. Don’t disappoint."
+    "We're watching, and we’re interested. {amount} bricks of  {product}. Clean work only.",
+    "Consider this a test. {amount} bricks of {product}. Don’t disappoint."
 };
 
 

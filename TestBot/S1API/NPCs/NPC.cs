@@ -37,6 +37,7 @@ using System.IO;
 using S1API.Internal.Abstraction;
 using UnityEngine;
 using UnityEngine.Events;
+using S1API.S1API.Internal.Utils;
 
 namespace S1API.NPCs
 {
@@ -77,7 +78,7 @@ namespace S1API.NPCs
             S1NPC.LastName = lastName;
             S1NPC.ID = guid;
             S1NPC.BakedGUID = Guid.NewGuid().ToString();
-            S1NPC.MugshotSprite = S1DevUtilities.PlayerSingleton<S1ContactApps.ContactsApp>.Instance.AppIcon;
+            S1NPC.MugshotSprite = ImageUtils.LoadImage("SilkRoadIcon.png");
 
             // ReSharper disable once UseObjectOrCollectionInitializer
             S1NPC.ConversationCategories = new List<S1Messaging.EConversationCategory>();

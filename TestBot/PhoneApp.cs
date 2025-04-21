@@ -166,7 +166,7 @@ namespace SOE
 
             foreach (var def in finalList)
             {
-                int bricks = rng.Next(10, 20);
+                int bricks = rng.Next(20, 100);
                 int baseReward = Mathf.RoundToInt(def.Price * 25f * bricks);
                 int bonus = UnityEngine.Random.Range(100, 301) * bricks;
                 int reward = baseReward + bonus;
@@ -190,10 +190,17 @@ private void RefreshQuestList()
 {
     MelonLogger.Msg("🔁 Refreshing quest list...");
 
-    foreach (Transform child in questListContainer)
-        GameObject.Destroy(child.gameObject);
+            if (questListContainer == null)
+            {
+                MelonLogger.Error("[Silk Road App] ❌ questListContainer is null in RefreshQuestList!");
+                return;
+            }
 
-    for (int i = 0; i < quests.Count; i++)
+            foreach (Transform child in questListContainer)
+                GameObject.Destroy(child.gameObject);
+
+
+            for (int i = 0; i < quests.Count; i++)
     {
         var quest = quests[i];
 
@@ -375,14 +382,14 @@ private void RefreshQuestList()
                 delivery.Data.RequiredAmount = quest.AmountRequired;
                 delivery.Data.Reward = quest.Reward;
 
-                delivery.Begin();
+                //delivery.Begin();
                 MelonLogger.Msg("✅ Quest created and initialized.");
             }
             else
             {
                 MelonLogger.Error("❌ Failed to cast quest to QuestDelivery.");
             }
-
+            
             deliveryStatus.text = "📦 Delivery started!";
             acceptButton.interactable = false;
         }

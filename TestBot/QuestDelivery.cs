@@ -11,7 +11,12 @@ using S1API.Products;
 using S1API.Saveables;
 using S1API.NPCs;
 using System.Collections.Generic;
-
+#if IL2CPP
+using Il2CppScheduleOne.Economy;
+#else
+using ScheduleOne.Economy;
+#endif
+using Random = UnityEngine.Random;
 
 namespace SilkRoad.Quests
 {
@@ -51,8 +56,8 @@ namespace SilkRoad.Quests
                     return;
                 }
 
-                deliveryDrop = drops[5];
-                rewardDrop = drops[5];
+                deliveryDrop = drops[Random.Range(0, DeadDrop.DeadDrops.Count)];
+                rewardDrop = drops[Random.Range(0, DeadDrop.DeadDrops.Count)];
 
                 Data.DeliveryDropGUID = deliveryDrop.GUID;
                 Data.RewardDropGUID = rewardDrop.GUID;
@@ -83,6 +88,8 @@ namespace SilkRoad.Quests
                         MelonLogger.Error("❌ Not enough DeadDrops to reassign.");
                         return;
                     }
+                    S1Quest.onQuestBegin?.Invoke();
+
                 }
             }
 
