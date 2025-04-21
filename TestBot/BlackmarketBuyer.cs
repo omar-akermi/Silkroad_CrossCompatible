@@ -19,20 +19,20 @@ namespace SilkRoad.Quests
 
 
         private static readonly string[] DeliverySuccessTexts = {
-    "The stash was verified. Your reputation just got stronger.",
-    "Everything checked out. Not bad for your first real move.",
-    "Impressive. Clean drop, tight operation.",
-    "The cargo's in place. You're earning our trust.",
-    "That’s the kind of work that gets remembered. Good job."
+    "The stash was verified. Your reward will be with you shortly.",
+    "Everything checked out. Sit tight — payment's on the way.",
+    "Impressive. Clean drop. Expect your cash soon.",
+    "The cargo's in place. Funds are being processed.",
+    "Solid work. Your reward is en route. Stay alert."
+};
+        private static readonly string[] InstantRewardTexts = {
+    "Payment’s been sent. You did good — we notice things like that.",
+    "Cash is in your account. You pulled your weight, and that matters.",
+    "Transfer complete. Always good doing business with someone dependable.",
+    "Funds delivered. You handled it right — that earns respect.",
+    "You’ve been paid. Stick with us, and there’s more where that came from."
 };
 
-        private static readonly string[] RewardDropTexts = {
-    "The money's waiting. Don't make us remind you.",
-    "Payment's in the usual place. You’ve earned it — for now.",
-    "We deliver on our word. Your cut is ready.",
-    "Funds are where they should be. Collect, disappear, stay useful.",
-    "You've proven your value. Payment is placed. Use it wisely."
-};
 
 
         internal override void CreateInternal()
@@ -59,7 +59,7 @@ namespace SilkRoad.Quests
 
         public void SendRewardDropped()
         {
-            string line = RewardDropTexts[UnityEngine.Random.Range(0, RewardDropTexts.Length)];
+            string line = InstantRewardTexts[UnityEngine.Random.Range(0, InstantRewardTexts.Length)];
             SendTextMessage(line);
         }
     }

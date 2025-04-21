@@ -153,7 +153,7 @@ namespace SOE
 #endif
 
             List<ProductDefinition> finalList = new List<ProductDefinition>();
-            int count = Mathf.Min(filtered.Count, 4);
+            int count = Mathf.Min(filtered.Count, 8);
             while (finalList.Count < count)
             {
                 int index = rng.Next(0, filtered.Count);
@@ -167,8 +167,8 @@ namespace SOE
             foreach (var def in finalList)
             {
                 int bricks = rng.Next(20, 100);
-                int baseReward = Mathf.RoundToInt(def.Price * 25f * bricks);
-                int bonus = UnityEngine.Random.Range(100, 301) * bricks;
+                int baseReward = Mathf.RoundToInt(def.Price * 20f * bricks);
+                int bonus = UnityEngine.Random.Range(50, 201) * bricks;
                 int reward = baseReward + bonus;
 
                 quests.Add(new QuestData
@@ -240,8 +240,8 @@ private void RefreshQuestList()
         GameObject row = new GameObject("QuestRow_" + quest.Title);
         row.AddComponent<RectTransform>();
         Image rowBg = row.AddComponent<Image>();
-        rowBg.color = new Color(0.15f, 0.15f, 0.15f);
-        rowBg.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
+                rowBg.color = new Color(0.10f, 0.10f, 0.10f); // Darker row background for contrast
+                rowBg.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
         rowBg.type = Image.Type.Sliced;
         row.transform.SetParent(questListContainer, false);
 
@@ -322,14 +322,41 @@ private void RefreshQuestList()
 
         // Title
         UIFactory.Text("QuestTitle", quest.Title, textPanel.transform, 16, TextAnchor.MiddleLeft, FontStyle.Bold);
+#if IL2CPP
+                string mafiaLabel = "Client: Unknown";
 
-        // Mafia label
-        string mafiaLabel = "Client: Unknown";
+                // IL2CPP-safe way to detect specific product subclass
+                string internalType = product.GetIl2CppType().FullName;
+                MelonLogger.Msg($"🔍 IL2CPP type: {internalType}");
+
+                if (internalType.Contains("WeedDefinition"))
+                {
+                    mafiaLabel = "Client: German Mafia";
+                    MelonLogger.Msg("✅ Matched: WeedDefinition");
+                }
+                else if (internalType.Contains("CocaineDefinition"))
+                {
+                    mafiaLabel = "Client: Canadian Mafia";
+                    MelonLogger.Msg("✅ Matched: CocaineDefinition");
+                }
+                else if (internalType.Contains("MethDefinition"))
+                {
+                    mafiaLabel = "Client: Russian Mafia";
+                    MelonLogger.Msg("✅ Matched: MethDefinition");
+                }
+                else
+                {
+                    MelonLogger.Warning("⚠️ No known product type match.");
+                }
+
+#else
+                // Mafia label
+                string mafiaLabel = "Client: Unknown";
         if (product is WeedDefinition) mafiaLabel = "Client: German Mafia";
         else if (product is CocaineDefinition) mafiaLabel = "Client: Canadian Mafia";
         else if (product is MethDefinition) mafiaLabel = "Client: Russian Mafia";
-
-        UIFactory.Text("QuestClient", mafiaLabel, textPanel.transform, 14, TextAnchor.UpperLeft);
+#endif
+                UIFactory.Text("QuestClient", mafiaLabel, textPanel.transform, 14, TextAnchor.UpperLeft);
 
         if (isCompleted)
         {

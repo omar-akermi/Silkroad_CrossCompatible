@@ -38,7 +38,7 @@ namespace SilkRoad.Quests
         {
             base.CreateInternal();
             QuestActive = true;
-
+            
             MelonLogger.Msg($"🔍 QuestDelivery CreateInternal: ProductID={Data?.ProductID}, Initialized={Data?.Initialized}");
 
             if (Data == null)
@@ -56,8 +56,10 @@ namespace SilkRoad.Quests
                     return;
                 }
 
-                deliveryDrop = drops[Random.Range(0, DeadDrop.DeadDrops.Count)];
-                rewardDrop = drops[Random.Range(0, DeadDrop.DeadDrops.Count)];
+                //deliveryDrop = drops[Random.Range(0, DeadDrop.DeadDrops.Count)];
+                //rewardDrop = drops[Random.Range(0, DeadDrop.DeadDrops.Count)];
+                deliveryDrop = drops[5];
+                rewardDrop = drops[5];
 
                 Data.DeliveryDropGUID = deliveryDrop.GUID;
                 Data.RewardDropGUID = rewardDrop.GUID;
@@ -96,8 +98,7 @@ namespace SilkRoad.Quests
             deliveryEntry = AddEntry($"Deliver {Data.RequiredAmount}x bricks of {Data.ProductID} to {deliveryDrop.name}");
             deliveryEntry.POIPosition = deliveryDrop.Position;
             deliveryEntry.Begin();
-
-            rewardEntry = AddEntry($"Collect your reward from {rewardDrop.name}");
+            rewardEntry = AddEntry($"Wait for the payement to arrive.");
             rewardEntry.POIPosition = rewardDrop.Position;
             rewardEntry.SetState(QuestState.Inactive);
 
@@ -138,13 +139,48 @@ namespace SilkRoad.Quests
 
             deliveryEntry.Complete();
             rewardEntry.SetState(QuestState.Active);
-            rewardDrop.Storage.OnOpened += GiveReward;
+            //rewardDrop.Storage.OnOpened += GiveReward;
+            MelonCoroutines.Start(DelayedReward());
 
             Contacts.Buyer?.SendDeliverySuccess(Data.ProductID);
 
             MelonLogger.Msg("✅ Delivery complete. Reward entry now active.");
         }
+        private System.Collections.IEnumerator DelayedReward()
+        {
+            float delaySeconds = 10f; // Adjust delay as needed
+            yield return new WaitForSeconds(delaySeconds);
 
+            if (deliveryEntry == null)
+                yield break;
+
+            var rewardAmount = Data.Reward;
+
+            // Use the same logic as ShipmentReward()
+#if IL2CPP
+            var consoleCommand = new Il2CppScheduleOne.Console.ChangeCashCommand();
+            var args = new Il2CppSystem.Collections.Generic.List<string>();
+#else
+            var consoleCommand = new ScheduleOne.Console.ChangeCashCommand();
+            var args = new System.Collections.Generic.List<string>();
+#endif
+            args.Add(rewardAmount.ToString());
+            consoleCommand.Execute(args);
+
+            MelonLogger.Msg($"💵 Player rewarded with ${rewardAmount} using Console.ChangeCashCommand.");
+
+            QuestActive = false;
+            string key = $"{Data.ProductID}_{Data.RequiredAmount}";
+            CompletedQuestKeys.Add(key);
+            Contacts.Buyer?.SendRewardDropped();
+            rewardEntry?.Complete();
+            //deliveryEntry?.Complete();
+            Complete();
+            QuestManager.Quests.Remove(this);
+            OnQuestCompleted?.Invoke();
+
+        }
+        /*
         private void GiveReward()
         {
             if (deliveryEntry == null || rewardEntry == null)
@@ -195,7 +231,7 @@ namespace SilkRoad.Quests
 
             rewardDrop.Storage.OnOpened -= GiveReward;
         }
-
+        */
         protected override string Title =>
             Data?.ProductID != null ? $"Deliver {Data.ProductID}" : "Silkroad Delivery";
 
